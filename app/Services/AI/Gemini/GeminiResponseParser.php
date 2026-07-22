@@ -4,6 +4,7 @@ namespace App\Services\AI\Gemini;
 
 use App\Data\AI\TicketAnalysisData;
 use App\Services\AI\Contracts\AIResponseParser;
+use App\Services\AI\Exceptions\InvalidAIResponseException;
 use App\Services\AI\Validators\TicketAnalysisResponseValidator;
 
 class GeminiResponseParser implements AIResponseParser
@@ -15,7 +16,11 @@ class GeminiResponseParser implements AIResponseParser
     public function parse(array $rawResponse): TicketAnalysisData
     {
         $text = data_get($rawResponse, 'candidates.0.content.parts.0.text');
-
+        if (!$text) {
+            throw new InvalidAIResponseException(
+                'Gemini response text is missing.'
+            );
+        }
         $text = trim(
             str_replace(
                 ['```json', '```'],
@@ -25,9 +30,10 @@ class GeminiResponseParser implements AIResponseParser
         );
 
         $result = json_decode($text, true);
-
         if (!is_array($result)) {
-            throw new \RuntimeException('Invalid AI JSON response.');
+            throw new InvalidAIResponseException(
+                'Gemini returned invalid JSON.'
+            );
         }
         $result = $this->validator->validate($result);
 

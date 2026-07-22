@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Ticket;
+use App\Services\AI\Exceptions\AIException;
 use App\Services\AI\TicketAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -24,17 +25,30 @@ class AnalyzeTicketJob implements ShouldQueue
      */
     public function handle(TicketAnalyzer $analyzer): void
     {
-        logger()->info("AI Analysis Started for Ticket #{$this->ticket->id}");
+        try {
 
-        // Update status to processing
-        $this->ticket->update([
-            'status' => 'processing',
-        ]);
+            logger()->info("AI Analysis Started for Ticket #{$this->ticket->id}");
 
-        $analysis = $analyzer->analyzeTicket(
-            $this->ticket
-        );
 
+            $this->ticket->update([
+                'status' => 'processing',
+            ]);
+
+            $analysis = $analyzer->analyzeTicket($this->ticket);
+
+        } catch (AIException $e) {
+
+            $this->ticket->update([
+                'status' => 'failed',
+            ]);
+
+            logger()->error($e->getMessage(), [
+                'ticket_id' => $this->ticket->id,
+                'exception' => get_class($e),
+            ]);
+
+            throw $e;
+        }
         $this->ticket->update([
             ...$analysis->toArray(),
             'status' => 'completed',
