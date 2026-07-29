@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Ticket;
-use App\Services\AI\Exceptions\AIException;
+use App\Services\AI\Execution\AIExecution;
 use App\Services\AI\TicketAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -12,48 +12,40 @@ class AnalyzeTicketJob implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(protected Ticket $ticket)
     {
-        //
     }
 
-    /**
-     * Execute the job.
-     */
-    public function handle(TicketAnalyzer $analyzer): void
-    {
-        try {
+    public function handle(
+        TicketAnalyzer $analyzer,
+        AIExecution $execution
+    ): void {
 
-            logger()->info("AI Analysis Started for Ticket #{$this->ticket->id}");
+        $this->ticket->update([
+            'status' => 'processing',
+        ]);
 
-
-            $this->ticket->update([
-                'status' => 'processing',
-            ]);
-
-            $analysis = $analyzer->analyzeTicket($this->ticket);
-
-        } catch (AIException $e) {
-
-            $this->ticket->update([
-                'status' => 'failed',
-            ]);
-
-            logger()->error($e->getMessage(), [
+        $analysis = $execution->run(
+            callback: fn() => $analyzer->analyzeTicket($this->ticket),
+            context: [
                 'ticket_id' => $this->ticket->id,
-                'exception' => get_class($e),
-            ]);
+            ]
+        );
 
-            throw $e;
-        }
         $this->ticket->update([
             ...$analysis->toArray(),
             'status' => 'completed',
             'analyzed_at' => now(),
         ]);
-        logger()->info("AI Analysis Completed for Ticket #{$this->ticket->id}");
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $e): void
+    {
+        $this->ticket->update([
+            'status' => 'failed',
+        ]);
     }
 }

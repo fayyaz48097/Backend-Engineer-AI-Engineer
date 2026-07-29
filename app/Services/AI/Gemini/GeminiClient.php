@@ -13,17 +13,25 @@ class GeminiClient implements AIClient
     public function generate(string $prompt): array
     {
         try {
-            $response = Http::timeout(30)->post(
-                sprintf(
-                    'https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s',
-                    config('services.gemini.model'),
-                    config('services.gemini.api_key')
-                ),
-                [
-                    'contents' => [
-                        'parts' => [['text' => $prompt]],
-                    ],
-                ]
+            $response = retry(
+                config('ai.retry.times'),
+                function () use ($prompt) {
+                    return Http::timeout(config('ai.timeout'))->post(
+                        sprintf(
+                            'https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s',
+                            config('ai.providers.gemini.model'),
+                            config('services.gemini.api_key')
+                        ),
+                        [
+                            'contents' => [
+                                'parts' => [['text' => $prompt]],
+                            ],
+                        ]
+                    );
+                },
+                function ($attempt) {
+                    return pow(2, $attempt) * 1000;
+                }
             );
         } catch (\Throwable $e) {
             throw new AIConnectionException(
