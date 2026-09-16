@@ -2,14 +2,12 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Services\AI\Contracts\AIClient;
 use App\Services\AI\Contracts\AIPromptBuilder;
 use App\Services\AI\Contracts\AIResponseParser;
-// use App\Services\AI\Gemini\GeminiClient;
 use App\Services\AI\Factories\AIClientFactory;
-use App\Services\AI\Gemini\GeminiResponseParser;
 use App\Services\AI\Prompts\TicketPromptBuilder;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,15 +16,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Client and parser both come from the factory, so AI_PROVIDER alone
+        // decides which provider the whole pipeline talks to.
         $this->app->bind(
             AIClient::class,
-            function ($app) {
-                return $app
-                    ->make(AIClientFactory::class)
-                    ->make();
-            }
+            fn ($app) => $app->make(AIClientFactory::class)->client()
         );
-        $this->app->bind(AIResponseParser::class, GeminiResponseParser::class);
+
+        $this->app->bind(
+            AIResponseParser::class,
+            fn ($app) => $app->make(AIClientFactory::class)->parser()
+        );
+
         $this->app->bind(AIPromptBuilder::class, TicketPromptBuilder::class);
     }
 

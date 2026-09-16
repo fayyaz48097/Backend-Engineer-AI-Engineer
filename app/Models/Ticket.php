@@ -21,4 +21,11 @@ class Ticket extends Model
         'suggested_reply',
         'analyzed_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'analyzed_at' => 'datetime',
+        ];
+    }
 }

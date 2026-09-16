@@ -16,43 +16,39 @@ class AIExecution
 
         $start = microtime(true);
 
-        logger()->info('AI execution started.', [
+        $base = [
             'request_id' => $requestId,
             'provider' => config('ai.provider'),
+            // Read the model of whichever provider is active, not a hardcoded one.
+            'model' => config('ai.providers.'.config('ai.provider').'.model'),
             ...$context,
-        ]);
+        ];
+
+        logger()->info('AI execution started.', $base);
 
         try {
             $result = $callback();
 
-            $duration = (int) round(
-                (microtime(true) - $start) * 1000
-            );
-
             logger()->info('AI execution completed.', [
-                'request_id' => $requestId,
-                'provider' => config('ai.provider'),
-                'model' => config('ai.providers.gemini.model'),
-                'duration_ms' => $duration,
-                ...$context,
+                ...$base,
+                'duration_ms' => $this->elapsed($start),
             ]);
 
             return $result;
         } catch (Throwable $e) {
-            $duration = (int) round(
-                (microtime(true) - $start) * 1000
-            );
-
             logger()->error('AI execution failed.', [
-                'request_id' => $requestId,
-                'provider' => config('ai.provider'),
-                'duration_ms' => $duration,
+                ...$base,
+                'duration_ms' => $this->elapsed($start),
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),
-                ...$context,
             ]);
 
             throw $e;
         }
+    }
+
+    private function elapsed(float $start): int
+    {
+        return (int) round((microtime(true) - $start) * 1000);
     }
 }

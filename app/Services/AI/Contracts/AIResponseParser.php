@@ -7,7 +7,7 @@ use App\Data\AI\TicketAnalysisData;
 interface AIResponseParser
 {
     /**
-     * Parse the raw AI response into a clean associative array.
+     * Parse the raw AI response into a validated, typed object.
      */
-    public function parse(array $response): TicketAnalysisData;
+    public function parse(array $rawResponse): TicketAnalysisData;
 }

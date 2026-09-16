@@ -14,8 +14,7 @@ class TicketAnalyzer
         protected AIClient $client,
         protected AIPromptBuilder $promptBuilder,
         protected AIResponseParser $responseParser,
-    ) {
-    }
+    ) {}
 
     public function analyzeTicket(Ticket $ticket): TicketAnalysisData
     {
@@ -24,7 +23,10 @@ class TicketAnalyzer
             message: $ticket->message,
         );
 
-        $rawResponse = $this->client->generate($prompt);
+        $rawResponse = $this->client->generate(
+            prompt: $prompt,
+            responseSchema: $this->promptBuilder->responseSchema(),
+        );
 
         return $this->responseParser->parse($rawResponse);
     }
