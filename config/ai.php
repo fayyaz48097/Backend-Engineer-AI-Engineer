@@ -26,6 +26,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Structured Output
+    |--------------------------------------------------------------------------
+    |
+    | Ask the provider to constrain its answer to the prompt builder's schema
+    | instead of merely requesting JSON in the prompt. Not every model
+    | supports it, so this is a kill switch: set AI_STRUCTURED_OUTPUT=false to
+    | fall back to prompt-only JSON without shipping code.
+    |
+    */
+
+    'structured_output' => env('AI_STRUCTURED_OUTPUT', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Retry
     |--------------------------------------------------------------------------
     |

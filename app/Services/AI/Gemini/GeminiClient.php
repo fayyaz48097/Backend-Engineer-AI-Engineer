@@ -21,17 +21,17 @@ class GeminiClient implements AIClient
 
     public function generate(string $prompt, array $responseSchema = []): array
     {
-        $model = config('ai.providers.gemini.model');
+        $model = config('ai.providers.gemini.model', 'gemini-2.5-flash');
 
         try {
-            $response = Http::timeout(config('ai.timeout'))
-                ->connectTimeout(config('ai.connect_timeout'))
+            $response = Http::timeout(config('ai.timeout', 30))
+                ->connectTimeout(config('ai.connect_timeout', 10))
                 // The API key travels as a header, not a query string, so it
                 // never lands in proxy or web-server access logs.
                 ->withHeader('x-goog-api-key', config('services.gemini.api_key'))
                 ->retry(
-                    times: config('ai.retry.times'),
-                    sleepMilliseconds: fn (int $attempt) => (2 ** $attempt) * config('ai.retry.delay'),
+                    times: config('ai.retry.times', 3),
+                    sleepMilliseconds: fn (int $attempt) => (2 ** $attempt) * config('ai.retry.delay', 1000),
                     when: fn (\Throwable $e) => $this->shouldRetry($e),
                     throw: false,
                 )
@@ -67,9 +67,13 @@ class GeminiClient implements AIClient
             ],
         ];
 
-        if ($responseSchema !== []) {
+        if ($responseSchema !== [] && config('ai.structured_output', true)) {
             // Structured output: the model is constrained to this shape by the
             // decoder rather than merely asked for it in the prompt.
+            //
+            // Kill switch: not every model accepts a responseSchema. Setting
+            // AI_STRUCTURED_OUTPUT=false falls back to prompt-only JSON, which
+            // the parser still handles, without needing a code deploy.
             $payload['generationConfig'] = [
                 'responseMimeType' => 'application/json',
                 'responseSchema' => $this->toGeminiSchema($responseSchema),

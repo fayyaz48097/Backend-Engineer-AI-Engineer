@@ -43,6 +43,15 @@ class AnalyzeTicketJobTest extends TestCase
         $this->assertSame('Already summarised.', $ticket->summary);
     }
 
+    public function test_force_re_analyzes_a_ticket_that_already_has_a_result(): void
+    {
+        $ticket = Ticket::factory()->analyzed()->create();
+
+        AnalyzeTicketJob::dispatchSync($ticket, force: true);
+
+        $this->assertSame('Technical', $ticket->refresh()->category);
+    }
+
     public function test_it_marks_the_ticket_failed_when_the_provider_is_unreachable(): void
     {
         $ticket = Ticket::factory()->create();

@@ -50,6 +50,20 @@ class GeminiClientTest extends TestCase
         });
     }
 
+    public function test_the_kill_switch_disables_structured_output(): void
+    {
+        config(['ai.structured_output' => false]);
+
+        Http::fake([self::ENDPOINT => Http::response(['candidates' => []])]);
+
+        app(GeminiClient::class)->generate(
+            'Hello',
+            app(TicketPromptBuilder::class)->responseSchema()
+        );
+
+        Http::assertSent(fn (Request $request) => ! isset($request->data()['generationConfig']));
+    }
+
     public function test_it_retries_retryable_status_codes(): void
     {
         Http::fake([self::ENDPOINT => Http::sequence()

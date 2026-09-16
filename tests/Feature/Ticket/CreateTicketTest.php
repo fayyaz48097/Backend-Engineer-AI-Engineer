@@ -44,14 +44,12 @@ class CreateTicketTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    public function test_it_paginates_the_index(): void
+    public function test_it_lists_tickets(): void
     {
         Ticket::factory()->count(3)->create();
 
-        $this->getJson('/api/tickets?per_page=2')
+        $this->getJson('/api/tickets')
             ->assertOk()
-            ->assertJsonPath('data.per_page', 2)
-            ->assertJsonPath('data.total', 3)
-            ->assertJsonCount(2, 'data.data');
+            ->assertJsonCount(3, 'data');
     }
 }

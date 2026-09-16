@@ -30,9 +30,13 @@ class AnalyzeTicketJob implements ShouldQueue
      */
     public int $timeout = 180;
 
-    public function __construct(protected Ticket $ticket)
-    {
-    }
+    /**
+     * @param  bool  $force  Re-analyze a ticket that already has a result.
+     *                       Needed for backfills and for re-running a ticket
+     *                       after a prompt change; without it the idempotency
+     *                       guard below would silently skip the job.
+     */
+    public function __construct(protected Ticket $ticket, protected bool $force = false) {}
 
     public function handle(
         TicketAnalyzer $analyzer,
@@ -40,7 +44,7 @@ class AnalyzeTicketJob implements ShouldQueue
     ): void {
         // Idempotency: a retry (or a duplicate dispatch) must not pay for a
         // second analysis or overwrite a result that already landed.
-        if ($this->ticket->analyzed_at !== null) {
+        if (! $this->force && $this->ticket->analyzed_at !== null) {
             return;
         }
 
@@ -48,7 +52,7 @@ class AnalyzeTicketJob implements ShouldQueue
 
         try {
             $analysis = $execution->run(
-                callback: fn() => $analyzer->analyzeTicket($this->ticket),
+                callback: fn () => $analyzer->analyzeTicket($this->ticket),
                 context: ['ticket_id' => $this->ticket->id],
             );
         } catch (AIRateLimitException $e) {
