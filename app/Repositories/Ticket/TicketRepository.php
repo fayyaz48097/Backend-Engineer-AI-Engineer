@@ -6,8 +6,7 @@ use App\Models\Ticket;
 
 class TicketRepository
 {
-    protected Ticket $model;
-    public function __construct(Ticket $model)
+    public function __construct(protected Ticket $model)
     {
         $this->model = $model;
     }
