@@ -74,6 +74,13 @@ class AnalyzeTicketJob implements ShouldQueue
             'status' => 'completed',
             'analyzed_at' => now(),
         ]);
+
+        // Email generation is a separate job so that a failure there can never
+        // mark a perfectly good analysis as failed. Off by default: with
+        // AI_EMAIL_ENABLED unset this line does nothing at all.
+        if (config('ai.email.enabled', false)) {
+            GenerateTicketEmailJob::dispatch($this->ticket->fresh());
+        }
     }
 
     /**

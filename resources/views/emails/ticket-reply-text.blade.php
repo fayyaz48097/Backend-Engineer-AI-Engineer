@@ -1,0 +1,4 @@
+{{ $body }}
+
+--
+Reference: ticket #{{ $ticketId }}
