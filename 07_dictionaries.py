@@ -43,8 +43,10 @@ user = {
 print(user.keys())
 
 print(user.values())
-
+print("==========================")
 print(user.items())
+print("==========================")
+
 
 
 # Loops
