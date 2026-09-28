@@ -1,0 +1,10 @@
+{
+    "name": "Fayyaz",
+    "age": 25,
+    "developer": true,
+    "country": "Pakistan",
+    "skills": [
+        "Python",
+        "AI"
+    ]
+}
